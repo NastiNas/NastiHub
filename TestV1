@@ -1,0 +1,205 @@
+-- Services --
+local TweenService = game:GetService("TweenService")
+local userInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+
+
+-- UI -- 
+local UI = game:GetObjects('rbxassetid://18929087680')[1]
+UI.Parent = CoreGui
+
+-- Interface Variable Setup --
+
+local MainFrame = UI.MainFrame
+local SideMenu = MainFrame.SideMenu
+local ContentHolder = MainFrame.ContentHolder
+local MenuFolder = ContentHolder.Menus
+local ButtonHolder = SideMenu.ButtonHolder
+local SideStrokeHolder = SideMenu.Appearance.SideStroke
+
+
+-- Interface Functionality Variables --
+local SideMenuExtended = false
+local SideMenuOrigSize = SideMenu.Size
+local ButtonOriginalSize = ButtonHolder.Home.Size
+local currentPos = MainFrame.Position
+local hidden = false
+
+--
+local tweenInfo1 = TweenInfo.new(0.5)
+local tweenInfo2 = TweenInfo.new(0.35)
+
+--
+
+local HideKeybind = Enum.KeyCode.RightAlt
+
+
+
+
+--- Functionality + Tweens ---
+
+
+-- Dragging + Close UI
+
+local function onInputBegan(input, gameProcessed)
+	if gameProcessed then return end
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		local mousePosition = input.Position
+		local framePosition = MainFrame.AbsolutePosition
+		local frameSize = MainFrame.AbsoluteSize
+
+		if mousePosition.X >= framePosition.X and mousePosition.X <= framePosition.X + frameSize.X and
+			mousePosition.Y >= framePosition.Y and mousePosition.Y <= framePosition.Y + frameSize.Y then
+			dragging = true
+			dragStart = input.Position
+			startPos = MainFrame.Position
+		end
+	end
+end
+
+
+local function onInputEnded(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = false
+	end
+end
+
+
+local function onInputChanged(input)
+	if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+		local delta = input.Position - dragStart
+		MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+	end
+end
+
+
+local function onKeyPress(input)
+	if input.KeyCode == HideKeybind then
+		if hidden then
+			local show = TweenService:Create(MainFrame, tweenInfo1, {Position = currentPos})
+			show:Play()
+			hidden = false
+		else
+			currentPos = MainFrame.Position
+			local hide = TweenService:Create(MainFrame, tweenInfo1, {Position = UDim2.new(-1, 0, currentPos.Y.Scale, currentPos.Y.Offset)})
+			hide:Play()
+			hidden = true
+		end
+	end
+end
+
+
+-----
+
+
+SideMenu.MouseEnter:Connect(function()
+	SideMenuExtended= true
+
+	local ExpandGoal = {}
+	ExpandGoal.Size = UDim2.new(0.359, 0,1, 0)
+	
+
+	local ExpandOut = TweenService:Create(SideMenu, tweenInfo1, ExpandGoal)
+	ExpandOut:Play()
+
+	for i,v in pairs(ButtonHolder:GetChildren()) do
+		if v:IsA("Frame") and SideMenuExtended then 
+			local ButtonExpandGoal = {}
+			ButtonExpandGoal.Size = UDim2.new(0.95, 0,0.135, 0)
+
+			local ExpandButton = TweenService:Create(v, tweenInfo1, ButtonExpandGoal)
+			local MaintainIcon = TweenService:Create(v.Icon, tweenInfo2, {Position = UDim2.new(0.15, 0,0.5, 0)})
+			local ShowText = TweenService:Create(v.Text, tweenInfo2, {TextTransparency = 0})
+
+			ExpandButton:Play()
+			MaintainIcon:Play()
+			ShowText:Play()
+			wait(0.1)
+		end
+	end
+end)
+
+
+SideMenu.MouseLeave:Connect(function()
+	SideMenuExtended = false
+
+	local ShrinkGoal = {}
+	ShrinkGoal.Size = SideMenuOrigSize
+
+	local Shrink = TweenService:Create(SideMenu, tweenInfo1, ShrinkGoal)
+	Shrink:Play()
+
+	for i,v in pairs(ButtonHolder:GetChildren()) do 
+		if v:IsA("Frame") and not SideMenuExtended then 
+			local ButtonShrinkGoal = {}
+			ButtonShrinkGoal.Size = ButtonOriginalSize
+
+			local ShrinkButton = TweenService:Create(v, tweenInfo1, ButtonShrinkGoal)
+			local ReturnIcon = TweenService:Create(v.Icon, tweenInfo2, {Position = UDim2.new(0.5,0,0.5,0)})
+			local HideText = TweenService:Create(v.Text, tweenInfo2, {TextTransparency = 1})
+
+			ShrinkButton:Play()
+			ReturnIcon:Play()
+			HideText:Play()
+		end
+	end
+end)
+
+for i,v in pairs(ButtonHolder:GetChildren()) do
+	if v:IsA("Frame") then 
+		v.MouseEnter:Connect(function()
+			v.UIStroke.Enabled = true 
+		end)
+
+		v.MouseLeave:Connect(function()
+			v.UIStroke.Enabled = false
+		end)
+	end
+end
+
+local function ClearSideStroke()
+	for i,v in pairs(SideMenu.Appearance.SideStroke:GetChildren()) do
+		if v:IsA("UIGradient") then 
+			v.Enabled = false
+		end
+	end
+end
+
+local function ClearMenus()
+	for i,v in pairs(ContentHolder.Menus:GetChildren()) do
+		if v:IsA("Frame") then 
+			v.Visible = false
+		end
+	end
+end
+
+for i,v in pairs(ButtonHolder:GetChildren()) do 
+	if v:IsA("Frame") then
+		v.Interact.MouseButton1Click:Connect(function()
+			ClearSideStroke()
+			ClearMenus()
+			if v.Name == "Home" then
+				SideStrokeHolder.HomeGradient.Enabled = true
+				MenuFolder.Home.Visible = true
+			elseif v.Name == "Games" then
+				SideStrokeHolder.GamesGradient.Enabled = true
+				MenuFolder.Games.Visible = true 
+			elseif v.Name == "TBD1" then 
+				SideStrokeHolder.TBD1Gradient.Enabled = true
+				MenuFolder.TBD1.Visible = true
+			elseif v.Name == "TBD2" then 
+				SideStrokeHolder.TBD2Gradient.Enabled = true
+				MenuFolder.TBD2.Visible = true
+			elseif v.Name == "Settings" then 
+				SideStrokeHolder.SettingsGradient.Enabled = true
+				MenuFolder.Settings.Visible = true
+			end
+		end)
+	end
+end
+
+-- Start UI Functionalities --
+userInputService.InputBegan:Connect(onInputBegan)
+userInputService.InputChanged:Connect(onInputChanged)
+userInputService.InputEnded:Connect(onInputEnded)
+userInputService.InputBegan:Connect(onKeyPress)
